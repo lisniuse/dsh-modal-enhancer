@@ -35,10 +35,10 @@ return {
 
     /* -------- styles -------- */
     const CSS = String.raw`
-.dshme-dialog .dshme-titlebar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 14px 0 24px;min-height:34px;flex:none;-webkit-user-select:none;user-select:none;z-index:3}
-.dshme-dialog .dshme-titlebar .dshme-draghandle{flex:1;align-self:stretch;cursor:move;cursor:grab;touch-action:none;display:flex;align-items:center;color:var(--dsw-alias-label-secondary,#878787);font-size:12px}
+.dshme-dialog .dshme-titlebar{display:flex;align-items:center;gap:8px;width:100%;box-sizing:border-box;padding:0 14px 0 24px;min-height:34px;flex:none;-webkit-user-select:none;user-select:none;z-index:3}
+.dshme-dialog .dshme-titlebar .dshme-draghandle{flex:1 1 auto;min-width:0;margin-right:auto;align-self:stretch;cursor:move;cursor:grab;touch-action:none;display:flex;align-items:center;color:var(--dsw-alias-label-secondary,#878787);font-size:12px}
 .dshme-dialog.dshme-dragging .dshme-draghandle{cursor:grabbing}
-.dshme-dialog .dshme-titlebar .dshme-actions{display:flex;align-items:center;gap:4px;flex:none}
+.dshme-dialog .dshme-titlebar .dshme-actions{display:flex;align-items:center;gap:4px;flex:0 0 auto;margin-left:0}
 .dshme-dialog .dshme-btn{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;padding:0;border:none;border-radius:6px;background:transparent;color:var(--dsw-alias-label-secondary,#878787);cursor:pointer;font-size:12px;line-height:1;transition:background .12s ease,color .12s ease}
 .dshme-dialog .dshme-btn:hover{background:var(--dsw-alias-interactive-bg-hover,rgba(128,128,128,.18));color:var(--dsw-alias-label-primary,#1f2329)}
 .dshme-dialog .dshme-btn[aria-pressed='true']{color:var(--dsw-alias-interactive-primary,#2563eb)}
