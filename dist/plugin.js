@@ -45,7 +45,7 @@ return {
     /* -------- enhancement runtime (inlined) -------- */
     const DIALOG_SELECTOR = '[role="dialog"][aria-modal="true"]'
     const STORAGE_KEY = 'dshme.enabled'
-    const enhanced = new WeakSet()
+    let enhanced = new WeakSet()
     let observer = null
 
     function readEnabled() {
@@ -231,7 +231,8 @@ return {
       // Remove prior per-node glue so a toggle reflects immediately.
       for (let i = disposers.length - 1; i >= 0; i -= 1) disposers[i]()
       disposers.length = 0
-      enhanced.clear()
+      // A WeakSet has no clear(); replace it so a toggle re-enhances from scratch.
+      enhanced = new WeakSet()
       if (observer !== null) { observer.disconnect(); observer = null }
       if (enhancerConfig.enabled) startWatching()
     }
