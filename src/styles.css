@@ -1,49 +1,46 @@
 /*
- * dsh-modal-enhancer — styles
+ * dsh-modal-enhancer — styles (readable reference)
  *
- * These rules are injected into the DSH web page via the `styles.insert`
- * builtin while the plugin run is active. Every selector is scoped under the
- * `.dshme-` prefix and, for the host dialog, targets the stable role/aria
- * contract the product renders on every modal card
- * (`[role="dialog"][aria-modal="true"]`), never CSS-module hashed names.
- *
- * The `.dshme-dialog` class is applied in JS to each dialog the enhancer owns,
- * so every dialog-level style below is gated only on our own class.
+ * Mirrors the CSS inlined in `src/plugin-body.js`; keep the two in sync.
+ * Every selector is scoped under `.dshme-`; the host dialog class
+ * `.dshme-dialog` is added in JS to each enhanced modal card.
  */
 
-/* ------------------------------------------------------------------
- * Drag handle
- * ------------------------------------------------------------------ */
-.dshme-dialog .dshme-dragstrip {
-  position: absolute;
-  /* only the top band is a drag handle; stays clear of toolbar and content */
-  left: 0;
-  right: 64px;
-  top: 0;
-  height: 34px;
-  cursor: move;
-  cursor: grab;
+/* Dedicated titlebar row (its own line, never overlaps native chrome). */
+.dshme-dialog .dshme-titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 14px 0 24px;
+  min-height: 34px;
+  flex: none;
   -webkit-user-select: none;
   user-select: none;
-  touch-action: none;
   z-index: 3;
 }
 
-.dshme-dialog.dshme-dragging .dshme-dragstrip {
+.dshme-dialog .dshme-titlebar .dshme-draghandle {
+  flex: 1;
+  align-self: stretch;
+  cursor: move;
+  cursor: grab;
+  touch-action: none;
+  display: flex;
+  align-items: center;
+  color: var(--dsw-alias-label-secondary, #878787);
+  font-size: 12px;
+}
+
+.dshme-dialog.dshme-dragging .dshme-draghandle {
   cursor: grabbing;
 }
 
-/* ------------------------------------------------------------------
- * Toolbar (maximize + clear-blur toggles)
- * ------------------------------------------------------------------ */
-.dshme-dialog .dshme-toolbar {
-  position: absolute;
-  top: 8px;
-  right: 14px;
+.dshme-dialog .dshme-titlebar .dshme-actions {
   display: flex;
   align-items: center;
   gap: 4px;
-  z-index: 4;
+  flex: none;
 }
 
 .dshme-dialog .dshme-btn {
@@ -72,9 +69,7 @@
   color: var(--dsw-alias-interactive-primary, #2563eb);
 }
 
-/* ------------------------------------------------------------------
- * Resize handles (N / S / E / W / four corners)
- * ------------------------------------------------------------------ */
+/* Resize handles (N / S / E / W / four corners). */
 .dshme-dialog .dshme-handle {
   position: absolute;
   z-index: 2;
@@ -90,20 +85,28 @@
 .dshme-handle.dshme-se { bottom: -5px; right: -5px; width: 14px; height: 14px; cursor: nwse-resize; }
 .dshme-handle.dshme-sw { bottom: -5px; left: -5px; width: 14px; height: 14px; cursor: nesw-resize; }
 
-/* ------------------------------------------------------------------
- * Maximized state
- * ------------------------------------------------------------------ */
-.dshme-dialog.dshme-maximized {
-  width: min(94vw, 1200px) !important;
-  height: min(90vh, 900px) !important;
-  max-width: none !important;
+/* Managed geometry: fixed rect in viewport coordinates. */
+.dshme-dialog.dshme-managed {
+  position: fixed !important;
+  margin: 0 !important;
 }
 
-/* ------------------------------------------------------------------
- * Blurless state — applied as an attribute on the dialog's overlay parent.
- * The JS sets an inline style on the mask directly; this rule is a safety
- * net for any future mask that uses the same token.
- * ------------------------------------------------------------------ */
+/* Maximized: pin the card to the full viewport (12px breathing room). */
+.dshme-dialog.dshme-maximized {
+  position: fixed !important;
+  margin: 0 !important;
+  top: 12px !important;
+  left: 12px !important;
+  right: 12px !important;
+  bottom: 12px !important;
+  width: auto !important;
+  height: auto !important;
+  max-width: none !important;
+  max-height: none !important;
+  transform: none !important;
+}
+
+/* Blurless state on the mask (attribute set on the overlay). */
 [data-dshme-blurless='true'] .dshme-blur-target {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
