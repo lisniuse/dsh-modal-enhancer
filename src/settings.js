@@ -44,6 +44,13 @@ export function writeEnabled(enabled) {
  * @returns {object} a React component the plugin registers into the slot.
  */
 export function createSettingsRow(deps) {
+  const t = typeof deps.t === 'function' ? deps.t : (key) => {
+    const DICT = {
+      zh: { settingsTitle: '弹窗增强', settingsDesc: '弹窗可拖动、缩放、最大化，并支持移除背景模糊' },
+      en: { settingsTitle: 'Modal Enhancer', settingsDesc: 'Drag, resize, maximize, and remove backdrop blur on modals' },
+    }
+    return DICT.zh[key] ?? key
+  }
   return function EnhancerSettingsRow(props) {
     // `props.useStore` is provided by the renderer for store-enabled slots;
     // fall back to the deps value when absent.
@@ -68,12 +75,12 @@ export function createSettingsRow(deps) {
         React.createElement(
           'div',
           { style: { fontSize: '14px', lineHeight: '20px', fontWeight: 500, color: 'var(--dsw-alias-label-primary, #1f2329)' } },
-          '弹窗增强',
+          t('settingsTitle'),
         ),
         React.createElement(
           'div',
           { style: { fontSize: '12px', lineHeight: '18px', color: 'var(--dsw-alias-label-secondary, #878787)' } },
-          '弹窗可拖动、缩放、最大化，并支持移除背景模糊',
+          t('settingsDesc'),
         ),
       ),
       React.createElement(

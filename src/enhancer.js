@@ -32,6 +32,20 @@ export function createEnhancer(config) {
   const enhanced = new WeakSet()
   const disposers = []
   let observer = null
+  // Bilingual copy; caller may supply its own translator, else English keys pass through.
+  const DICT = {
+    zh: {
+      dragHandle: '⠿ 拖动', maximize: '最大化', restore: '还原',
+      pin: '钉住弹窗', unpin: '取消钉住', removeBlur: '移除背景与模糊', restoreBlur: '恢复背景',
+    },
+    en: {
+      dragHandle: '⠿ Drag', maximize: 'Maximize', restore: 'Restore',
+      pin: 'Pin dialog', unpin: 'Unpin dialog', removeBlur: 'Remove backdrop and blur', restoreBlur: 'Restore backdrop',
+    },
+  }
+  const t = typeof config.t === 'function'
+    ? config.t
+    : (key) => DICT.en[key] ?? key
 
   function createStateStore(dialog) {
     const labelledBy = dialog.getAttribute('aria-labelledby')
@@ -227,7 +241,7 @@ export function createEnhancer(config) {
       : snapshotRect(dialog)
     if (stateStore.value.maximized === true) {
       button.setAttribute('aria-pressed', 'true')
-      button.title = 'Restore'
+      button.title = t('restore')
       button.textContent = '❐'
     }
     const onToggle = (e) => {
@@ -244,14 +258,14 @@ export function createEnhancer(config) {
           dialog.style.height = `${saved.height}px`
         }
         button.setAttribute('aria-pressed', 'false')
-        button.title = 'Maximize'
+        button.title = t('maximize')
         button.textContent = '⛶'
         stateStore.update({ maximized: false, geometry: saved, restore: saved })
       } else {
         saved = snapshotRect(dialog)
         dialog.classList.add('dshme-managed', 'dshme-maximized')
         button.setAttribute('aria-pressed', 'true')
-        button.title = 'Restore'
+        button.title = t('restore')
         button.textContent = '❐'
         stateStore.update({ maximized: true, restore: saved })
       }
@@ -264,7 +278,7 @@ export function createEnhancer(config) {
     const overlay = dialog.parentElement
     if (stateStore.value.pinned === true) {
       button.setAttribute('aria-pressed', 'true')
-      button.title = 'Unpin dialog'
+      button.title = t('unpin')
       button.setAttribute('aria-label', button.title)
     }
     const onOutsideClick = (e) => {
@@ -279,7 +293,7 @@ export function createEnhancer(config) {
       e.stopPropagation()
       const pinned = button.getAttribute('aria-pressed') !== 'true'
       button.setAttribute('aria-pressed', String(pinned))
-      button.title = pinned ? 'Unpin dialog' : 'Pin dialog'
+      button.title = pinned ? t('unpin') : t('pin')
       button.setAttribute('aria-label', button.title)
       stateStore.update({ pinned })
     }
@@ -299,7 +313,7 @@ export function createEnhancer(config) {
     }
     if (stateStore.value.blurless === true) {
       button.setAttribute('aria-pressed', 'true')
-      button.title = 'Restore backdrop'
+      button.title = t('restoreBlur')
       button.textContent = '◌'
       if (mask !== null) mask.classList.add('dshme-blur-target')
       overlay?.setAttribute('data-dshme-blurless', 'true')
@@ -309,7 +323,7 @@ export function createEnhancer(config) {
       e.stopPropagation()
       const off = button.getAttribute('aria-pressed') === 'true'
       button.setAttribute('aria-pressed', String(!off))
-      button.title = off ? 'Restore backdrop' : 'Remove backdrop and blur'
+      button.title = off ? t('restoreBlur') : t('removeBlur')
       button.textContent = off ? '◐' : '◌'
       if (mask !== null) mask.classList.toggle('dshme-blur-target', !off)
       if (overlay !== null) {
@@ -344,7 +358,7 @@ export function createEnhancer(config) {
       titlebar.tabIndex = -1
       const handle = document.createElement('div')
       handle.className = 'dshme-draghandle'
-      handle.textContent = '⠿ 拖动'
+      handle.textContent = t('dragHandle')
       titlebar.appendChild(handle)
       if (config.drag) disposers.push(attachDrag(dialog, handle, stateStore))
       if (config.pin || config.maximize || config.blurless) {
@@ -355,8 +369,8 @@ export function createEnhancer(config) {
           btn.type = 'button'
           btn.className = 'dshme-btn'
           btn.setAttribute('aria-pressed', 'false')
-          btn.title = 'Pin dialog'
-          btn.setAttribute('aria-label', 'Pin dialog')
+          btn.title = t('pin')
+          btn.setAttribute('aria-label', t('pin'))
           btn.innerHTML = '<svg class="dshme-pin-icon" viewBox="0 0 24 24" aria-hidden="true"><path class="dshme-pin-fill" d="M8 3h8l-1 6 4 4v2H5v-2l4-4-1-6Z"/><path d="M8 3h8l-1 6 4 4v2H5v-2l4-4-1-6ZM12 15v6"/></svg>'
           btn.addEventListener('pointerdown', (e) => e.stopPropagation())
           disposers.push(attachPin(dialog, btn, stateStore))
@@ -367,7 +381,7 @@ export function createEnhancer(config) {
           btn.type = 'button'
           btn.className = 'dshme-btn'
           btn.setAttribute('aria-pressed', 'false')
-          btn.title = 'Maximize'
+          btn.title = t('maximize')
           btn.textContent = '⛶'
           btn.addEventListener('pointerdown', (e) => e.stopPropagation())
           disposers.push(attachMaximize(dialog, btn, stateStore))
@@ -378,7 +392,7 @@ export function createEnhancer(config) {
           btn.type = 'button'
           btn.className = 'dshme-btn'
           btn.setAttribute('aria-pressed', 'false')
-          btn.title = 'Remove backdrop and blur'
+          btn.title = t('removeBlur')
           btn.textContent = '◐'
           btn.addEventListener('pointerdown', (e) => e.stopPropagation())
           disposers.push(attachBlurless(dialog, btn, stateStore))

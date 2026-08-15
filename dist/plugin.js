@@ -10,6 +10,45 @@
 return {
   inject: ['slots'],
   apply(ctx) {
+    // Bilingual UI copy (zh / en), resolved against the dsh `locale` service so
+    // the plugin follows the harness language setting.
+    const DICT = {
+      zh: {
+        settingsTitle: '弹窗增强',
+        settingsDesc: '弹窗可拖动、缩放、最大化、钉住，并支持移除背景模糊',
+        dragHandle: '⠿ 拖动',
+        maximize: '最大化',
+        restore: '还原',
+        pin: '钉住弹窗',
+        unpin: '取消钉住',
+        removeBlur: '移除背景与模糊',
+        restoreBlur: '恢复背景',
+      },
+      en: {
+        settingsTitle: 'Modal Enhancer',
+        settingsDesc: 'Drag, resize, maximize, pin, and remove backdrop blur on modals',
+        dragHandle: '⠿ Drag',
+        maximize: 'Maximize',
+        restore: 'Restore',
+        pin: 'Pin dialog',
+        unpin: 'Unpin dialog',
+        removeBlur: 'Remove backdrop and blur',
+        restoreBlur: 'Restore backdrop',
+      },
+    }
+
+    // Translate a copy key using the active dsh locale (defaults to zh).
+    function t(key) {
+      let lang = 'zh'
+      const locale = ctx.get('locale')
+      if (locale !== undefined && typeof locale.getLocale === 'function') {
+        const snap = locale.getLocale()
+        if (snap !== null && typeof snap === 'object' && (snap.active === 'en' || snap.active === 'zh')) lang = snap.active
+      }
+      const dict = DICT[lang] || DICT.zh
+      return dict[key] !== undefined ? dict[key] : (DICT.zh[key] !== undefined ? DICT.zh[key] : key)
+    }
+
     // Master config; `enabled` gates everything, the rest are per-feature toggles.
     const enhancerConfig = {
       enabled: readEnabled(),
@@ -259,7 +298,7 @@ return {
         ? clampRect(storedRestore)
         : snapshotRect(dialog)
       if (stateStore.value.maximized === true) {
-        button.setAttribute('aria-pressed', 'true'); button.title = 'Restore'; button.textContent = '❐'
+        button.setAttribute('aria-pressed', 'true'); button.title = t('restore'); button.textContent = '❐'
       }
       const onToggle = (e) => {
         e.preventDefault(); e.stopPropagation()
@@ -275,7 +314,7 @@ return {
             dialog.style.height = `${saved.height}px`
           }
           button.setAttribute('aria-pressed', 'false')
-          button.title = 'Maximize'
+          button.title = t('maximize')
           button.textContent = '⛶'
           stateStore.update({ maximized: false, geometry: saved, restore: saved })
         } else {
@@ -283,7 +322,7 @@ return {
           saved = snapshotRect(dialog)
           dialog.classList.add('dshme-managed', 'dshme-maximized')
           button.setAttribute('aria-pressed', 'true')
-          button.title = 'Restore'
+          button.title = t('restore')
           button.textContent = '❐'
           stateStore.update({ maximized: true, restore: saved })
         }
@@ -295,7 +334,7 @@ return {
     function attachPin(dialog, button, stateStore) {
       const overlay = dialog.parentElement
       if (stateStore.value.pinned === true) {
-        button.setAttribute('aria-pressed', 'true'); button.title = 'Unpin dialog'
+        button.setAttribute('aria-pressed', 'true'); button.title = t('unpin')
         button.setAttribute('aria-label', button.title)
       }
       const onOutsideClick = (e) => {
@@ -307,7 +346,7 @@ return {
         e.preventDefault(); e.stopPropagation()
         const pinned = button.getAttribute('aria-pressed') !== 'true'
         button.setAttribute('aria-pressed', String(pinned))
-        button.title = pinned ? 'Unpin dialog' : 'Pin dialog'
+        button.title = pinned ? t('unpin') : t('pin')
         button.setAttribute('aria-label', button.title)
         stateStore.update({ pinned })
       }
@@ -326,7 +365,7 @@ return {
         mask = overlay.querySelector('.dshme-blur-target')
       }
       if (stateStore.value.blurless === true) {
-        button.setAttribute('aria-pressed', 'true'); button.title = 'Restore backdrop'; button.textContent = '◌'
+        button.setAttribute('aria-pressed', 'true'); button.title = t('restoreBlur'); button.textContent = '◌'
         if (mask !== null) mask.classList.add('dshme-blur-target')
         if (overlay !== null) overlay.setAttribute('data-dshme-blurless', 'true')
       }
@@ -334,7 +373,7 @@ return {
         e.preventDefault(); e.stopPropagation()
         const off = button.getAttribute('aria-pressed') === 'true'
         button.setAttribute('aria-pressed', String(!off))
-        button.title = off ? 'Restore backdrop' : 'Remove backdrop and blur'
+        button.title = off ? t('restoreBlur') : t('removeBlur')
         button.textContent = off ? '◐' : '◌'
         if (mask !== null) mask.classList.toggle('dshme-blur-target', !off)
         if (overlay !== null) {
@@ -369,7 +408,7 @@ return {
         titlebar.tabIndex = -1
         const handle = document.createElement('div')
         handle.className = 'dshme-draghandle'
-        handle.textContent = '⠿ 拖动'
+        handle.textContent = t('dragHandle')
         titlebar.appendChild(handle)
         if (enhancerConfig.drag) {
           disposers.push(attachDrag(dialog, handle, stateStore))
@@ -380,8 +419,8 @@ return {
           if (enhancerConfig.pin) {
             const btn = document.createElement('button')
             btn.type = 'button'; btn.className = 'dshme-btn'
-            btn.setAttribute('aria-pressed', 'false'); btn.title = 'Pin dialog'
-            btn.setAttribute('aria-label', 'Pin dialog')
+            btn.setAttribute('aria-pressed', 'false'); btn.title = t('pin')
+            btn.setAttribute('aria-label', t('pin'))
             btn.innerHTML = '<svg class="dshme-pin-icon" viewBox="0 0 24 24" aria-hidden="true"><path class="dshme-pin-fill" d="M8 3h8l-1 6 4 4v2H5v-2l4-4-1-6Z"/><path d="M8 3h8l-1 6 4 4v2H5v-2l4-4-1-6ZM12 15v6"/></svg>'
             btn.addEventListener('pointerdown', (e) => e.stopPropagation())
             disposers.push(attachPin(dialog, btn, stateStore))
@@ -390,7 +429,7 @@ return {
           if (enhancerConfig.maximize) {
             const btn = document.createElement('button')
             btn.type = 'button'; btn.className = 'dshme-btn'
-            btn.setAttribute('aria-pressed', 'false'); btn.title = 'Maximize'; btn.textContent = '⛶'
+            btn.setAttribute('aria-pressed', 'false'); btn.title = t('maximize'); btn.textContent = '⛶'
             btn.addEventListener('pointerdown', (e) => e.stopPropagation())
             disposers.push(attachMaximize(dialog, btn, stateStore))
             actions.appendChild(btn)
@@ -398,7 +437,7 @@ return {
           if (enhancerConfig.blurless) {
             const btn = document.createElement('button')
             btn.type = 'button'; btn.className = 'dshme-btn'
-            btn.setAttribute('aria-pressed', 'false'); btn.title = 'Remove backdrop and blur'; btn.textContent = '◐'
+            btn.setAttribute('aria-pressed', 'false'); btn.title = t('removeBlur'); btn.textContent = '◐'
             btn.addEventListener('pointerdown', (e) => e.stopPropagation())
             disposers.push(attachBlurless(dialog, btn, stateStore))
             actions.appendChild(btn)
@@ -476,6 +515,16 @@ return {
       }
     })
 
+    // Re-apply copy on language switch so already-mounted dialogs swap zh/en.
+    ctx.effect(() => {
+      const locale = ctx.get('locale')
+      if (locale === undefined || typeof locale.subscribe !== 'function') return
+      const unsub = locale.subscribe(() => {
+        if (enhancerConfig.enabled) rebuild()
+      })
+      return unsub
+    })
+
     /* -------- settings row (inlined React component) -------- */
     function onMasterToggle(enabled) {
       enhancerConfig.enabled = enabled
@@ -484,6 +533,12 @@ return {
 
     const SettingsRow = () => {
       const [enabled, setEnabled] = React.useState(enhancerConfig.enabled)
+      const [, setLocaleTick] = React.useState(0)
+      React.useEffect(() => {
+        const locale = ctx.get('locale')
+        if (locale === undefined || typeof locale.subscribe !== 'function') return
+        return locale.subscribe(() => setLocaleTick(n => n + 1))
+      }, [])
       const toggle = () => {
         const next = !enabled
         setEnabled(next)
@@ -499,12 +554,12 @@ return {
           React.createElement(
             'div',
             { style: { fontSize: '14px', lineHeight: '20px', fontWeight: 500, color: 'var(--dsw-alias-label-primary,#1f2329)' } },
-            '弹窗增强',
+            t('settingsTitle'),
           ),
           React.createElement(
             'div',
             { style: { fontSize: '12px', lineHeight: '18px', color: 'var(--dsw-alias-label-secondary,#878787)' } },
-            '弹窗可拖动、缩放、最大化，并支持移除背景模糊',
+            t('settingsDesc'),
           ),
         ),
         React.createElement(

@@ -65,6 +65,34 @@ window.__ModuleLoader__.load({
 
     exports.inject = ['slots']
 
+    // Bilingual UI copy (zh / en), resolved against the dsh `locale` service so
+    // the plugin follows the harness language setting. Keys map to the arrow
+    // functions below; the active language is read at call time.
+    var DICT = {
+      zh: {
+        settingsTitle: '弹窗增强',
+        settingsDesc: '弹窗可拖动、缩放、最大化、钉住，并支持移除背景模糊',
+        dragHandle: '⠿ 拖动',
+        maximize: '最大化',
+        restore: '还原',
+        pin: '钉住弹窗',
+        unpin: '取消钉住',
+        removeBlur: '移除背景与模糊',
+        restoreBlur: '恢复背景',
+      },
+      en: {
+        settingsTitle: 'Modal Enhancer',
+        settingsDesc: 'Drag, resize, maximize, pin, and remove backdrop blur on modals',
+        dragHandle: '⠿ Drag',
+        maximize: 'Maximize',
+        restore: 'Restore',
+        pin: 'Pin dialog',
+        unpin: 'Unpin dialog',
+        removeBlur: 'Remove backdrop and blur',
+        restoreBlur: 'Restore backdrop',
+      },
+    }
+
     exports.apply = function (ctx) {
       var enhancerConfig = {
         enabled: readEnabled(),
@@ -73,6 +101,22 @@ window.__ModuleLoader__.load({
         pin: true,
         maximize: true,
         blurless: true,
+      }
+
+      // Translate a copy key using the active dsh locale (defaults to zh when
+      // the locale service is absent). Reads the live value on every call so a
+      // rebuild after a locale switch re-renders the UI in the new language.
+      function t(key) {
+        var lang = 'zh'
+        var locale = ctx.get('locale')
+        if (locale !== undefined && typeof locale.getLocale === 'function') {
+          var snap = locale.getLocale()
+          if (snap !== null && typeof snap === 'object' && (snap.active === 'en' || snap.active === 'zh')) {
+            lang = snap.active
+          }
+        }
+        var dict = DICT[lang] || DICT.zh
+        return dict[key] !== undefined ? dict[key] : (DICT.zh[key] !== undefined ? DICT.zh[key] : key)
       }
 
       // Owned stylesheet, cleaned up with the plugin fiber.
@@ -267,7 +311,7 @@ window.__ModuleLoader__.load({
           ? clampRect(storedRestore)
           : snapshotRect(dialog)
         if (stateStore.value.maximized === true) {
-          button.setAttribute('aria-pressed', 'true'); button.title = 'Restore'; button.textContent = '❐'
+          button.setAttribute('aria-pressed', 'true'); button.title = t('restore'); button.textContent = '❐'
         }
         function onToggle(e) {
           e.preventDefault(); e.stopPropagation()
@@ -281,12 +325,12 @@ window.__ModuleLoader__.load({
               dialog.style.width = saved.width + 'px'
               dialog.style.height = saved.height + 'px'
             }
-            button.setAttribute('aria-pressed', 'false'); button.title = 'Maximize'; button.textContent = '⛶'
+            button.setAttribute('aria-pressed', 'false'); button.title = t('maximize'); button.textContent = '⛶'
             stateStore.update({ maximized: false, geometry: saved, restore: saved })
           } else {
             saved = snapshotRect(dialog)
             dialog.classList.add('dshme-managed', 'dshme-maximized')
-            button.setAttribute('aria-pressed', 'true'); button.title = 'Restore'; button.textContent = '❐'
+            button.setAttribute('aria-pressed', 'true'); button.title = t('restore'); button.textContent = '❐'
             stateStore.update({ maximized: true, restore: saved })
           }
         }
@@ -297,7 +341,7 @@ window.__ModuleLoader__.load({
       function attachPin(dialog, button, stateStore) {
         var overlay = dialog.parentElement
         if (stateStore.value.pinned === true) {
-          button.setAttribute('aria-pressed', 'true'); button.title = 'Unpin dialog'
+          button.setAttribute('aria-pressed', 'true'); button.title = t('unpin')
           button.setAttribute('aria-label', button.title)
         }
         function onOutsideClick(e) {
@@ -309,7 +353,7 @@ window.__ModuleLoader__.load({
           e.preventDefault(); e.stopPropagation()
           var pinned = button.getAttribute('aria-pressed') !== 'true'
           button.setAttribute('aria-pressed', String(pinned))
-          button.title = pinned ? 'Unpin dialog' : 'Pin dialog'
+          button.title = pinned ? t('unpin') : t('pin')
           button.setAttribute('aria-label', button.title)
           stateStore.update({ pinned: pinned })
         }
@@ -326,7 +370,7 @@ window.__ModuleLoader__.load({
         var mask = overlay !== null ? overlay.firstElementChild : null
         if (mask !== null && mask === dialog) mask = overlay.querySelector('.dshme-blur-target')
         if (stateStore.value.blurless === true) {
-          button.setAttribute('aria-pressed', 'true'); button.title = 'Restore backdrop'; button.textContent = '◌'
+          button.setAttribute('aria-pressed', 'true'); button.title = t('restoreBlur'); button.textContent = '◌'
           if (mask !== null) mask.classList.add('dshme-blur-target')
           if (overlay !== null) overlay.setAttribute('data-dshme-blurless', 'true')
         }
@@ -334,7 +378,7 @@ window.__ModuleLoader__.load({
           e.preventDefault(); e.stopPropagation()
           var off = button.getAttribute('aria-pressed') === 'true'
           button.setAttribute('aria-pressed', String(!off))
-          button.title = off ? 'Restore backdrop' : 'Remove backdrop and blur'
+          button.title = off ? t('restoreBlur') : t('removeBlur')
           button.textContent = off ? '◐' : '◌'
           if (mask !== null) mask.classList.toggle('dshme-blur-target', !off)
           if (overlay !== null) {
@@ -367,7 +411,7 @@ window.__ModuleLoader__.load({
           titlebar.tabIndex = -1
           var handle = document.createElement('div')
           handle.className = 'dshme-draghandle'
-          handle.textContent = '⠿ 拖动'
+          handle.textContent = t('dragHandle')
           titlebar.appendChild(handle)
           if (enhancerConfig.drag) disposers.push(attachDrag(dialog, handle, stateStore))
           if (enhancerConfig.pin || enhancerConfig.maximize || enhancerConfig.blurless) {
@@ -376,8 +420,8 @@ window.__ModuleLoader__.load({
             if (enhancerConfig.pin) {
               var pinBtn = document.createElement('button')
               pinBtn.type = 'button'; pinBtn.className = 'dshme-btn'
-              pinBtn.setAttribute('aria-pressed', 'false'); pinBtn.title = 'Pin dialog'
-              pinBtn.setAttribute('aria-label', 'Pin dialog')
+              pinBtn.setAttribute('aria-pressed', 'false'); pinBtn.title = t('pin')
+              pinBtn.setAttribute('aria-label', t('pin'))
               pinBtn.innerHTML = '<svg class="dshme-pin-icon" viewBox="0 0 24 24" aria-hidden="true"><path class="dshme-pin-fill" d="M8 3h8l-1 6 4 4v2H5v-2l4-4-1-6Z"/><path d="M8 3h8l-1 6 4 4v2H5v-2l4-4-1-6ZM12 15v6"/></svg>'
               pinBtn.addEventListener('pointerdown', function (e) { e.stopPropagation() })
               disposers.push(attachPin(dialog, pinBtn, stateStore))
@@ -386,7 +430,7 @@ window.__ModuleLoader__.load({
             if (enhancerConfig.maximize) {
               var maxBtn = document.createElement('button')
               maxBtn.type = 'button'; maxBtn.className = 'dshme-btn'
-              maxBtn.setAttribute('aria-pressed', 'false'); maxBtn.title = 'Maximize'; maxBtn.textContent = '⛶'
+              maxBtn.setAttribute('aria-pressed', 'false'); maxBtn.title = t('maximize'); maxBtn.textContent = '⛶'
               maxBtn.addEventListener('pointerdown', function (e) { e.stopPropagation() })
               disposers.push(attachMaximize(dialog, maxBtn, stateStore))
               actions.appendChild(maxBtn)
@@ -394,7 +438,7 @@ window.__ModuleLoader__.load({
             if (enhancerConfig.blurless) {
               var blurBtn = document.createElement('button')
               blurBtn.type = 'button'; blurBtn.className = 'dshme-btn'
-              blurBtn.setAttribute('aria-pressed', 'false'); blurBtn.title = 'Remove backdrop and blur'; blurBtn.textContent = '◐'
+              blurBtn.setAttribute('aria-pressed', 'false'); blurBtn.title = t('removeBlur'); blurBtn.textContent = '◐'
               blurBtn.addEventListener('pointerdown', function (e) { e.stopPropagation() })
               disposers.push(attachBlurless(dialog, blurBtn, stateStore))
               actions.appendChild(blurBtn)
@@ -469,6 +513,16 @@ window.__ModuleLoader__.load({
         }
       }, 'dsh-modal-enhancer: lifecycle')
 
+      // Re-apply copy on language switch so already-mounted dialogs swap zh/en.
+      ctx.effect(function () {
+        var locale = ctx.get('locale')
+        if (locale === undefined || typeof locale.subscribe !== 'function') return
+        var unsub = locale.subscribe(function () {
+          if (enhancerConfig.enabled) rebuild()
+        })
+        return unsub
+      }, 'dsh-modal-enhancer: locale sync')
+
       function onMasterToggle(enabled) {
         enhancerConfig.enabled = enabled
         rebuild()
@@ -477,6 +531,12 @@ window.__ModuleLoader__.load({
       var SettingsRow = function () {
         var state = react.useState(enhancerConfig.enabled)
         var enabled = state[0]; var setEnabled = state[1]
+        var localeTick = react.useState(0)
+        react.useEffect(function () {
+          var locale = ctx.get('locale')
+          if (locale === undefined || typeof locale.subscribe !== 'function') return
+          return locale.subscribe(function () { localeTick[1](function (n) { return n + 1 }) })
+        }, [])
         function toggle() {
           var next = !enabled
           setEnabled(next)
@@ -487,8 +547,8 @@ window.__ModuleLoader__.load({
           'div',
           { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', padding: '12px 0' } },
           react.createElement('div', null,
-            react.createElement('div', { style: { fontSize: '14px', lineHeight: '20px', fontWeight: 500, color: 'var(--dsw-alias-label-primary,#1f2329)' } }, '弹窗增强'),
-            react.createElement('div', { style: { fontSize: '12px', lineHeight: '18px', color: 'var(--dsw-alias-label-secondary,#878787)' } }, '弹窗可拖动、缩放、最大化、钉住，并支持移除背景模糊'),
+            react.createElement('div', { style: { fontSize: '14px', lineHeight: '20px', fontWeight: 500, color: 'var(--dsw-alias-label-primary,#1f2329)' } }, t('settingsTitle')),
+            react.createElement('div', { style: { fontSize: '12px', lineHeight: '18px', color: 'var(--dsw-alias-label-secondary,#878787)' } }, t('settingsDesc')),
           ),
           react.createElement('button', {
             type: 'button', role: 'switch', 'aria-checked': enabled, onClick: toggle,
