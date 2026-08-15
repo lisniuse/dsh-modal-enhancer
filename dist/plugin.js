@@ -15,6 +15,7 @@ return {
       enabled: readEnabled(),
       drag: true,
       resize: true,
+      pin: true,
       maximize: true,
       blurless: true,
     }
@@ -22,27 +23,33 @@ return {
     /* -------- styles -------- */
     const CSS = String.raw`
 .dshme-dialog .dshme-titlebar{display:flex;align-items:center;gap:8px;width:100%;box-sizing:border-box;padding:0 14px 0 24px;min-height:34px;flex:none;-webkit-user-select:none;user-select:none;z-index:3}
+.dshme-dialog.dshme-horizontal>.dshme-titlebar{position:absolute;inset:0 0 auto}
+.dshme-dialog.dshme-horizontal>:not(.dshme-titlebar):not(.dshme-handle){margin-top:calc(var(--dshme-original-margin-top,0px) + 34px)!important}
 .dshme-dialog .dshme-titlebar .dshme-draghandle{flex:1 1 auto;min-width:0;margin-right:auto;align-self:stretch;cursor:move;cursor:grab;touch-action:none;display:flex;align-items:center;color:var(--dsw-alias-label-secondary,#878787);font-size:12px}
 .dshme-dialog.dshme-dragging .dshme-draghandle{cursor:grabbing}
 .dshme-dialog .dshme-titlebar .dshme-actions{display:flex;align-items:center;gap:4px;flex:0 0 auto;margin-left:0}
 .dshme-dialog .dshme-btn{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;padding:0;border:none;border-radius:6px;background:transparent;color:var(--dsw-alias-label-secondary,#878787);cursor:pointer;font-size:12px;line-height:1;transition:background .12s ease,color .12s ease}
 .dshme-dialog .dshme-btn:hover{background:var(--dsw-alias-interactive-bg-hover,rgba(128,128,128,.18));color:var(--dsw-alias-label-primary,#1f2329)}
 .dshme-dialog .dshme-btn[aria-pressed='true']{color:var(--dsw-alias-interactive-primary,#2563eb)}
-.dshme-dialog .dshme-handle{position:absolute;z-index:2;touch-action:none}
-.dshme-handle.dshme-n{top:-4px;left:12px;right:12px;height:8px;cursor:ns-resize}
-.dshme-handle.dshme-s{bottom:-4px;left:12px;right:12px;height:8px;cursor:ns-resize}
-.dshme-handle.dshme-e{right:-4px;top:12px;bottom:12px;width:8px;cursor:ew-resize}
-.dshme-handle.dshme-w{left:-4px;top:12px;bottom:12px;width:8px;cursor:ew-resize}
-.dshme-handle.dshme-ne{top:-5px;right:-5px;width:14px;height:14px;cursor:nesw-resize}
-.dshme-handle.dshme-nw{top:-5px;left:-5px;width:14px;height:14px;cursor:nwse-resize}
-.dshme-handle.dshme-se{bottom:-5px;right:-5px;width:14px;height:14px;cursor:nwse-resize}
-.dshme-handle.dshme-sw{bottom:-5px;left:-5px;width:14px;height:14px;cursor:nesw-resize}
+.dshme-dialog .dshme-pin-icon{display:block;width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.dshme-dialog .dshme-pin-fill{fill:transparent;stroke:none;transition:fill .12s ease}
+.dshme-dialog .dshme-btn[aria-pressed='true'] .dshme-pin-fill{fill:currentColor;opacity:.2}
+.dshme-dialog .dshme-handle{position:absolute;z-index:5;touch-action:none}
+.dshme-handle.dshme-n{top:-6px;left:16px;right:16px;height:12px;cursor:ns-resize}
+.dshme-handle.dshme-s{bottom:-6px;left:16px;right:16px;height:12px;cursor:ns-resize}
+.dshme-handle.dshme-e{right:-6px;top:16px;bottom:16px;width:12px;cursor:ew-resize}
+.dshme-handle.dshme-w{left:-6px;top:16px;bottom:16px;width:12px;cursor:ew-resize}
+.dshme-handle.dshme-ne{top:-8px;right:-8px;width:20px;height:20px;cursor:nesw-resize}
+.dshme-handle.dshme-nw{top:-8px;left:-8px;width:20px;height:20px;cursor:nwse-resize}
+.dshme-handle.dshme-se{bottom:-8px;right:-8px;width:20px;height:20px;cursor:nwse-resize}
+.dshme-handle.dshme-sw{bottom:-8px;left:-8px;width:20px;height:20px;cursor:nesw-resize}
 /* When geometry is actively managed (dragged/resized), switch the card to a
    fixed rect measured in viewport coordinates so size and position never fight
    the parent flex centering. */
 .dshme-dialog.dshme-managed{position:fixed!important;margin:0!important}
 .dshme-dialog.dshme-maximized{position:fixed!important;margin:0!important;top:12px!important;left:12px!important;right:12px!important;bottom:12px!important;width:auto!important;height:auto!important;max-width:none!important;max-height:none!important;transform:none!important}
-[data-dshme-blurless='true'] .dshme-blur-target{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+[data-dshme-blurless='true'] .dshme-blur-target{background:transparent!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+[data-dshme-blurless='true'] .dshme-dialog{box-shadow:0 10px 28px rgba(0,0,0,.16),0 2px 8px rgba(0,0,0,.1)!important}
 `
 
     const disposeStyles = styles.insert(CSS)
@@ -50,8 +57,90 @@ return {
     /* -------- enhancement runtime (inlined) -------- */
     const DIALOG_SELECTOR = '[role="dialog"][aria-modal="true"]'
     const STORAGE_KEY = 'dshme.enabled'
+    const DIALOG_STATE_PREFIX = 'dshme.dialog-state.v1:'
     let enhanced = new WeakSet()
     let observer = null
+
+    function createStateStore(dialog) {
+      const labelledBy = dialog.getAttribute('aria-labelledby')
+      const labelledText = labelledBy === null
+        ? ''
+        : labelledBy.split(/\s+/).map(id => document.getElementById(id)?.textContent?.trim() ?? '').filter(Boolean).join(' ')
+      const identity = [
+        dialog.getAttribute('data-dshme-state-key'),
+        dialog.getAttribute('aria-label')?.trim(),
+        labelledText,
+        dialog.querySelector('h1,h2,h3,[role="heading"]')?.textContent?.trim(),
+      ].find(value => typeof value === 'string' && value !== '') ?? ''
+      const key = identity === '' ? null : `${DIALOG_STATE_PREFIX}${encodeURIComponent(identity)}`
+      let value = {}
+      if (key !== null) {
+        try {
+          const parsed = JSON.parse(localStorage.getItem(key) ?? '{}')
+          if (parsed !== null && typeof parsed === 'object' && !Array.isArray(parsed)) value = parsed
+        } catch { value = {} }
+      }
+      return {
+        get value() { return value },
+        update(patch) {
+          value = { ...value, ...patch }
+          if (key === null) return
+          try { localStorage.setItem(key, JSON.stringify(value)) } catch { /* best effort */ }
+        },
+      }
+    }
+
+    function snapshotRect(dialog) {
+      const rect = dialog.getBoundingClientRect()
+      return { left: rect.left, top: rect.top, width: rect.width, height: rect.height }
+    }
+
+    function clampRect(rect) {
+      const width = Math.max(220, Math.min(Number(rect.width) || 0, window.innerWidth))
+      const height = Math.max(220, Math.min(Number(rect.height) || 0, window.innerHeight))
+      return {
+        width, height,
+        left: Math.max(-width + 80, Math.min(Number(rect.left) || 0, window.innerWidth - 80)),
+        top: Math.max(0, Math.min(Number(rect.top) || 0, window.innerHeight - 60)),
+      }
+    }
+
+    function applyStoredState(dialog, state) {
+      const rect = state.geometry
+      if (rect !== null && typeof rect === 'object') {
+        const { left, top, width, height } = clampRect(rect)
+        dialog.classList.add('dshme-managed')
+        dialog.style.left = `${Math.round(left)}px`; dialog.style.top = `${Math.round(top)}px`
+        dialog.style.width = `${Math.round(width)}px`; dialog.style.height = `${Math.round(height)}px`
+        dialog.style.transform = 'none'
+      }
+      if (state.maximized === true) dialog.classList.add('dshme-managed', 'dshme-maximized')
+    }
+
+    // Keep horizontal host columns below the toolbar without reparenting the
+    // React-owned nodes (which would break later reconciliation).
+    function adaptHorizontalLayout(dialog) {
+      const computed = window.getComputedStyle(dialog)
+      if (computed.display !== 'flex' || !computed.flexDirection.startsWith('row')) return () => {}
+      const children = [...dialog.children]
+      const originalMargins = children.map(child => [
+        child,
+        child.style.getPropertyValue('--dshme-original-margin-top'),
+        child.style.getPropertyPriority('--dshme-original-margin-top'),
+      ])
+      for (const child of children) {
+        const marginTop = window.getComputedStyle(child).marginTop
+        child.style.setProperty('--dshme-original-margin-top', marginTop === 'auto' ? '0px' : marginTop)
+      }
+      dialog.classList.add('dshme-horizontal')
+      return () => {
+        dialog.classList.remove('dshme-horizontal')
+        for (const [child, value, priority] of originalMargins) {
+          if (value === '') child.style.removeProperty('--dshme-original-margin-top')
+          else child.style.setProperty('--dshme-original-margin-top', value, priority)
+        }
+      }
+    }
 
     function readEnabled() {
       try {
@@ -87,7 +176,7 @@ return {
     }
 
     /* Drag the card by its title-bar handle. */
-    function attachDrag(dialog, handle) {
+    function attachDrag(dialog, handle, stateStore) {
       let drag = null
       const onMove = (e) => {
         if (drag === null) return
@@ -101,10 +190,12 @@ return {
         if (drag === null) return
         drag = null
         dialog.classList.remove('dshme-dragging')
+        stateStore.update({ geometry: snapshotRect(dialog), maximized: false })
         window.removeEventListener('pointermove', onMove)
         window.removeEventListener('pointerup', onUp)
       }
       const onDown = (e) => {
+        if (dialog.classList.contains('dshme-maximized')) return
         if (e.target.closest('.dshme-actions') !== null) return
         const r = toManaged(dialog)
         drag = { baseLeft: r.left, baseTop: r.top, startX: e.clientX, startY: e.clientY, w: r.width }
@@ -123,8 +214,9 @@ return {
 
     /* Resize from edge/corner handles, keeping the opposite edge anchored so
        only the requested size changes — never the position. */
-    function attachResize(dialog, handle, dir) {
+    function attachResize(dialog, handle, dir, stateStore) {
       const onDown = (e) => {
+        if (dialog.classList.contains('dshme-maximized')) return
         e.preventDefault(); e.stopPropagation()
         const r = toManaged(dialog)
         const startX = e.clientX, startY = e.clientY
@@ -150,6 +242,7 @@ return {
           dialog.style.height = `${Math.round(height)}px`
         }
         const onUp = () => {
+          stateStore.update({ geometry: snapshotRect(dialog), maximized: false })
           window.removeEventListener('pointermove', onMove)
           window.removeEventListener('pointerup', onUp)
         }
@@ -160,8 +253,14 @@ return {
       return () => handle.removeEventListener('pointerdown', onDown)
     }
 
-    function attachMaximize(dialog, button) {
-      let saved = null
+    function attachMaximize(dialog, button, stateStore) {
+      const storedRestore = stateStore.value.restore ?? stateStore.value.geometry
+      let saved = storedRestore !== null && typeof storedRestore === 'object'
+        ? clampRect(storedRestore)
+        : snapshotRect(dialog)
+      if (stateStore.value.maximized === true) {
+        button.setAttribute('aria-pressed', 'true'); button.title = 'Restore'; button.textContent = '❐'
+      }
       const onToggle = (e) => {
         e.preventDefault(); e.stopPropagation()
         const isMax = dialog.classList.contains('dshme-maximized')
@@ -178,38 +277,71 @@ return {
           button.setAttribute('aria-pressed', 'false')
           button.title = 'Maximize'
           button.textContent = '⛶'
+          stateStore.update({ maximized: false, geometry: saved, restore: saved })
         } else {
           // Maximize: capture current rect, then pin the card across the viewport.
-          saved = { left: 0, top: 0, width: 0, height: 0 }
-          const r = dialog.getBoundingClientRect()
-          saved.left = r.left; saved.top = r.top; saved.width = r.width; saved.height = r.height
+          saved = snapshotRect(dialog)
           dialog.classList.add('dshme-managed', 'dshme-maximized')
           button.setAttribute('aria-pressed', 'true')
           button.title = 'Restore'
           button.textContent = '❐'
+          stateStore.update({ maximized: true, restore: saved })
         }
       }
       button.addEventListener('click', onToggle)
       return () => button.removeEventListener('click', onToggle)
     }
 
-    function attachBlurless(dialog, button) {
+    function attachPin(dialog, button, stateStore) {
+      const overlay = dialog.parentElement
+      if (stateStore.value.pinned === true) {
+        button.setAttribute('aria-pressed', 'true'); button.title = 'Unpin dialog'
+        button.setAttribute('aria-label', button.title)
+      }
+      const onOutsideClick = (e) => {
+        if (button.getAttribute('aria-pressed') !== 'true') return
+        if (e.target === dialog || dialog.contains(e.target)) return
+        e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation()
+      }
+      const onToggle = (e) => {
+        e.preventDefault(); e.stopPropagation()
+        const pinned = button.getAttribute('aria-pressed') !== 'true'
+        button.setAttribute('aria-pressed', String(pinned))
+        button.title = pinned ? 'Unpin dialog' : 'Pin dialog'
+        button.setAttribute('aria-label', button.title)
+        stateStore.update({ pinned })
+      }
+      button.addEventListener('click', onToggle)
+      if (overlay !== null) overlay.addEventListener('click', onOutsideClick, true)
+      return () => {
+        button.removeEventListener('click', onToggle)
+        if (overlay !== null) overlay.removeEventListener('click', onOutsideClick, true)
+      }
+    }
+
+    function attachBlurless(dialog, button, stateStore) {
       const overlay = dialog.parentElement
       let mask = overlay !== null ? overlay.firstElementChild : null
       if (mask !== null && mask === dialog) {
         mask = overlay.querySelector('.dshme-blur-target')
       }
+      if (stateStore.value.blurless === true) {
+        button.setAttribute('aria-pressed', 'true'); button.title = 'Restore backdrop'; button.textContent = '◌'
+        if (mask !== null) mask.classList.add('dshme-blur-target')
+        if (overlay !== null) overlay.setAttribute('data-dshme-blurless', 'true')
+      }
       const onToggle = (e) => {
         e.preventDefault(); e.stopPropagation()
         const off = button.getAttribute('aria-pressed') === 'true'
         button.setAttribute('aria-pressed', String(!off))
-        button.title = off ? 'Blur backdrop' : 'Remove backdrop blur'
+        button.title = off ? 'Restore backdrop' : 'Remove backdrop and blur'
         button.textContent = off ? '◐' : '◌'
         if (mask !== null) mask.classList.toggle('dshme-blur-target', !off)
         if (overlay !== null) {
           if (off) overlay.removeAttribute('data-dshme-blurless')
           else overlay.setAttribute('data-dshme-blurless', 'true')
         }
+        stateStore.update({ blurless: !off })
       }
       button.addEventListener('click', onToggle)
       return () => button.removeEventListener('click', onToggle)
@@ -220,10 +352,18 @@ return {
       if (enhanced.has(dialog)) return
       enhanced.add(dialog)
       dialog.classList.add('dshme-dialog')
+      const stateStore = createStateStore(dialog)
+      const hasTitlebar = enhancerConfig.drag || enhancerConfig.pin || enhancerConfig.maximize || enhancerConfig.blurless
+      const restoreLayout = hasTitlebar ? adaptHorizontalLayout(dialog) : () => {}
+      const addedNodes = []
+      const originalGeometry = new Map(
+        ['left', 'top', 'right', 'bottom', 'width', 'height', 'transform', 'position', 'margin']
+          .map(name => [name, [dialog.style.getPropertyValue(name), dialog.style.getPropertyPriority(name)]])
+      )
 
-      // A dedicated titlebar row lives in normal flow (its own line) so our
-      // controls never overlap the native close button / title chrome.
-      if (enhancerConfig.drag || enhancerConfig.maximize || enhancerConfig.blurless) {
+      // A dedicated titlebar row lives in normal flow for column dialogs; the
+      // horizontal-layout adapter floats it above the host's unchanged columns.
+      if (hasTitlebar) {
         const titlebar = document.createElement('div')
         titlebar.className = 'dshme-titlebar'
         titlebar.tabIndex = -1
@@ -232,31 +372,42 @@ return {
         handle.textContent = '⠿ 拖动'
         titlebar.appendChild(handle)
         if (enhancerConfig.drag) {
-          disposers.push(attachDrag(dialog, handle))
+          disposers.push(attachDrag(dialog, handle, stateStore))
         }
-        if (enhancerConfig.maximize || enhancerConfig.blurless) {
+        if (enhancerConfig.pin || enhancerConfig.maximize || enhancerConfig.blurless) {
           const actions = document.createElement('div')
           actions.className = 'dshme-actions'
+          if (enhancerConfig.pin) {
+            const btn = document.createElement('button')
+            btn.type = 'button'; btn.className = 'dshme-btn'
+            btn.setAttribute('aria-pressed', 'false'); btn.title = 'Pin dialog'
+            btn.setAttribute('aria-label', 'Pin dialog')
+            btn.innerHTML = '<svg class="dshme-pin-icon" viewBox="0 0 24 24" aria-hidden="true"><path class="dshme-pin-fill" d="M8 3h8l-1 6 4 4v2H5v-2l4-4-1-6Z"/><path d="M8 3h8l-1 6 4 4v2H5v-2l4-4-1-6ZM12 15v6"/></svg>'
+            btn.addEventListener('pointerdown', (e) => e.stopPropagation())
+            disposers.push(attachPin(dialog, btn, stateStore))
+            actions.appendChild(btn)
+          }
           if (enhancerConfig.maximize) {
             const btn = document.createElement('button')
             btn.type = 'button'; btn.className = 'dshme-btn'
             btn.setAttribute('aria-pressed', 'false'); btn.title = 'Maximize'; btn.textContent = '⛶'
             btn.addEventListener('pointerdown', (e) => e.stopPropagation())
-            disposers.push(attachMaximize(dialog, btn))
+            disposers.push(attachMaximize(dialog, btn, stateStore))
             actions.appendChild(btn)
           }
           if (enhancerConfig.blurless) {
             const btn = document.createElement('button')
             btn.type = 'button'; btn.className = 'dshme-btn'
-            btn.setAttribute('aria-pressed', 'false'); btn.title = 'Remove backdrop blur'; btn.textContent = '◐'
+            btn.setAttribute('aria-pressed', 'false'); btn.title = 'Remove backdrop and blur'; btn.textContent = '◐'
             btn.addEventListener('pointerdown', (e) => e.stopPropagation())
-            disposers.push(attachBlurless(dialog, btn))
+            disposers.push(attachBlurless(dialog, btn, stateStore))
             actions.appendChild(btn)
           }
           titlebar.appendChild(actions)
         }
         // Insert before the modal's own content so the native header stays intact.
         dialog.insertBefore(titlebar, dialog.firstChild)
+        addedNodes.push(titlebar)
       }
       if (enhancerConfig.resize) {
         const dirs = ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw']
@@ -264,9 +415,26 @@ return {
           const handle = document.createElement('div')
           handle.className = `dshme-handle dshme-${dir}`
           dialog.appendChild(handle)
-          disposers.push(attachResize(dialog, handle, dir))
+          addedNodes.push(handle)
+          disposers.push(attachResize(dialog, handle, dir, stateStore))
         }
       }
+      applyStoredState(dialog, stateStore.value)
+      disposers.push(() => {
+        for (const node of addedNodes) node.remove()
+        restoreLayout()
+        dialog.classList.remove('dshme-dialog', 'dshme-managed', 'dshme-maximized', 'dshme-dragging')
+        for (const [name, [value, priority]] of originalGeometry) {
+          if (value === '') dialog.style.removeProperty(name)
+          else dialog.style.setProperty(name, value, priority)
+        }
+        const overlay = dialog.parentElement
+        if (overlay !== null) {
+          overlay.removeAttribute('data-dshme-blurless')
+          const mask = overlay.querySelector('.dshme-blur-target')
+          if (mask !== null) mask.classList.remove('dshme-blur-target')
+        }
+      })
     }
 
     function applyAll() {

@@ -21,6 +21,18 @@
   z-index: 3;
 }
 
+/* Horizontal host dialogs (for example Settings' nav + content columns) must
+ * keep their React-owned children in place. Float our bar above those columns
+ * and reserve the same vertical space on each existing flex item. */
+.dshme-dialog.dshme-horizontal > .dshme-titlebar {
+  position: absolute;
+  inset: 0 0 auto;
+}
+
+.dshme-dialog.dshme-horizontal > :not(.dshme-titlebar):not(.dshme-handle) {
+  margin-top: calc(var(--dshme-original-margin-top, 0px) + 34px) !important;
+}
+
 .dshme-dialog .dshme-titlebar .dshme-draghandle {
   flex: 1 1 auto;
   min-width: 0;
@@ -73,21 +85,43 @@
   color: var(--dsw-alias-interactive-primary, #2563eb);
 }
 
+.dshme-dialog .dshme-pin-icon {
+  display: block;
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.dshme-dialog .dshme-pin-fill {
+  fill: transparent;
+  stroke: none;
+  transition: fill 0.12s ease;
+}
+
+.dshme-dialog .dshme-btn[aria-pressed='true'] .dshme-pin-fill {
+  fill: currentColor;
+  opacity: 0.2;
+}
+
 /* Resize handles (N / S / E / W / four corners). */
 .dshme-dialog .dshme-handle {
   position: absolute;
-  z-index: 2;
+  z-index: 5;
   touch-action: none;
 }
 
-.dshme-handle.dshme-n { top: -4px; left: 12px; right: 12px; height: 8px; cursor: ns-resize; }
-.dshme-handle.dshme-s { bottom: -4px; left: 12px; right: 12px; height: 8px; cursor: ns-resize; }
-.dshme-handle.dshme-e { right: -4px; top: 12px; bottom: 12px; width: 8px; cursor: ew-resize; }
-.dshme-handle.dshme-w { left: -4px; top: 12px; bottom: 12px; width: 8px; cursor: ew-resize; }
-.dshme-handle.dshme-ne { top: -5px; right: -5px; width: 14px; height: 14px; cursor: nesw-resize; }
-.dshme-handle.dshme-nw { top: -5px; left: -5px; width: 14px; height: 14px; cursor: nwse-resize; }
-.dshme-handle.dshme-se { bottom: -5px; right: -5px; width: 14px; height: 14px; cursor: nwse-resize; }
-.dshme-handle.dshme-sw { bottom: -5px; left: -5px; width: 14px; height: 14px; cursor: nesw-resize; }
+.dshme-handle.dshme-n { top: -6px; left: 16px; right: 16px; height: 12px; cursor: ns-resize; }
+.dshme-handle.dshme-s { bottom: -6px; left: 16px; right: 16px; height: 12px; cursor: ns-resize; }
+.dshme-handle.dshme-e { right: -6px; top: 16px; bottom: 16px; width: 12px; cursor: ew-resize; }
+.dshme-handle.dshme-w { left: -6px; top: 16px; bottom: 16px; width: 12px; cursor: ew-resize; }
+.dshme-handle.dshme-ne { top: -8px; right: -8px; width: 20px; height: 20px; cursor: nesw-resize; }
+.dshme-handle.dshme-nw { top: -8px; left: -8px; width: 20px; height: 20px; cursor: nwse-resize; }
+.dshme-handle.dshme-se { bottom: -8px; right: -8px; width: 20px; height: 20px; cursor: nwse-resize; }
+.dshme-handle.dshme-sw { bottom: -8px; left: -8px; width: 20px; height: 20px; cursor: nesw-resize; }
 
 /* Managed geometry: fixed rect in viewport coordinates. */
 .dshme-dialog.dshme-managed {
@@ -112,6 +146,11 @@
 
 /* Blurless state on the mask (attribute set on the overlay). */
 [data-dshme-blurless='true'] .dshme-blur-target {
+  background: transparent !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
+}
+
+[data-dshme-blurless='true'] .dshme-dialog {
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.16), 0 2px 8px rgba(0, 0, 0, 0.1) !important;
 }

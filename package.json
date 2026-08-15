@@ -1,8 +1,8 @@
 {
   "name": "dsh-modal-enhancer",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": false,
-  "description": "Enhance every DeepSeek Harness web modal: draggable title bar, resizable edges, maximize, and removable blurred backdrop, with a settings toggle.",
+  "description": "Add drag, eight-way resize, pin, maximize, backdrop controls, and persistent state to DeepSeek Harness web modals.",
   "type": "module",
   "license": "MIT",
   "author": "lisniuse",
@@ -21,10 +21,12 @@
     "dist",
     "src",
     "docs",
-    "README.md"
+    "README.md",
+    "README.zh.md"
   ],
   "scripts": {
     "build": "node scripts/build.js",
+    "test": "node --test scripts/layout-check.test.js",
     "test:syntax": "node scripts/syntax-check.js"
   },
   "engines": {
