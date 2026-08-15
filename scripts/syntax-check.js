@@ -10,12 +10,14 @@ import vm from 'node:vm'
 const here = dirname(fileURLToPath(import.meta.url))
 const root = join(here, '..')
 
-const files = ['src/plugin-body.js', 'dist/plugin.js', 'src/enhancer.js', 'src/settings.js']
+const files = ['src/plugin-body.js', 'dist/plugin.js', 'src/enhancer.js', 'src/settings.js', 'index.js', 'client.js']
 
 // `plugin-body.js`/`dist/plugin.js` are function BODIES (they start with
 // `return { ... }` and are provided to the Evaluator as a function body).
-// `src/enhancer.js`/`src/settings.js` are ESM modules (they use `export`).
+// `src/enhancer.js`/`src/settings.js`/`index.js` are ESM modules (they use `export`).
+// `client.js` is a plain browser script (`window.__ModuleLoader__.load`).
 const FUNCTION_BODY = new Set(['src/plugin-body.js', 'dist/plugin.js'])
+const PLAIN_SCRIPT = new Set(['client.js'])
 
 let ok = true
 for (const rel of files) {
@@ -29,8 +31,11 @@ for (const rel of files) {
     if (FUNCTION_BODY.has(rel)) {
       // Mirror how the Evaluator wraps a `code.client` body: a plain function.
       new vm.Script(`function enhancerPluginBody(){\n${code}\n}`)
+    } else if (PLAIN_SCRIPT.has(rel)) {
+      // Plain browser script; assert it parses as a script.
+      new vm.Script(code)
     } else {
-      // ESM module source; assert it parses (and imports cleanly, since both
+      // ESM module source; assert it parses (and imports cleanly, since the
       // helper modules are side-effect free at load time).
       await import(`${pathToFileURL(path).href}?t=${Date.now()}`)
     }

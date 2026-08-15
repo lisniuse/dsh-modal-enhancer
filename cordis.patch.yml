@@ -1,0 +1,8 @@
+# dsh-modal-enhancer — bundle patch layer.
+#
+# Inserts one dual-plane row so the loader mounts this package on both planes:
+# the host half (index.js, a no-op) and the browser half (client.js, which
+# upgrades all dsh web modals). All behavior lives in the client half.
+- insert:
+    - id: dsh-modal-enhancer
+      name: dsh-modal-enhancer

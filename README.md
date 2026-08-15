@@ -59,9 +59,25 @@ available for the next time the enhancer is enabled.
 
 ## Installation
 
-The complete distributable is [dist/plugin.js](dist/plugin.js). Pass its entire
-contents as the `code.client` body of a dynamic `cordis_define` plugin. It is a
-plain JavaScript function body beginning with `return { ... }`.
+### Git install (recommended, like other dsh plugins)
+
+Install as a dual-plane bundle directly from GitHub:
+
+```sh
+dsh plugin --profile web add github:lisniuse/dsh-modal-enhancer
+```
+
+The package declares `dsh.bundle.patch` (mounts `cordis.patch.yml`) and
+`dsh.client` (platform `web`), so `dsh plugin add` reconciles it into the
+profile's layer stack automatically. It is pure JavaScript with no build step —
+the host half (`index.js`, a no-op) and the browser half (`client.js`) load
+directly. Restart `dsh web` after installation.
+
+### Dynamic plugin (single-file body)
+
+The complete single-file form is [dist/plugin.js](dist/plugin.js). Pass its
+entire contents as the `code.client` body of a dynamic `cordis_define` plugin.
+It is a plain JavaScript function body beginning with `return { ... }`.
 
 No Harness source modification, `pnpm install`, Web app rebuild, or server
 restart is required. See [docs/install.md](docs/install.md) for the detailed
@@ -88,16 +104,19 @@ so modal behavior and accidental-click protection are preserved.
 ## Project structure
 
 ```text
-dist/plugin.js                 Generated, single-file plugin body
-src/plugin-body.js             Canonical self-contained source
-src/enhancer.js                Readable modular runtime reference
-src/settings.js                Readable settings-row reference
-src/styles.css                 Readable stylesheet reference
-scripts/build.js               Generates dist/plugin.js
-scripts/layout-check.test.js   Layout, resize, pin, and persistence regression
-scripts/syntax-check.js        JavaScript syntax smoke gate
-docs/install.md                Detailed installation guide
-README.zh.md                   Simplified Chinese documentation
+index.js                        Dual-plane host half (no-op; mounts the bundle)
+client.js                       Dual-plane browser half (window.__ModuleLoader__)
+cordis.patch.yml                Bundle patch layer (inserts the plugin row)
+dist/plugin.js                  Generated, single-file (dynamic) plugin body
+src/plugin-body.js              Canonical self-contained source
+src/enhancer.js                 Readable modular runtime reference
+src/settings.js                 Readable settings-row reference
+src/styles.css                  Readable stylesheet reference
+scripts/build.js                Generates dist/plugin.js
+scripts/layout-check.test.js    Layout, resize, pin, and persistence regression
+scripts/syntax-check.js         JavaScript syntax smoke gate
+docs/install.md                 Detailed installation guide
+README.zh.md                    Simplified Chinese documentation
 ```
 
 ## Development

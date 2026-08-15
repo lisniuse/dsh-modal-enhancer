@@ -4,6 +4,12 @@
   "private": false,
   "description": "Add drag, eight-way resize, pin, maximize, backdrop controls, and persistent state to DeepSeek Harness web modals.",
   "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./package.json": "./package.json"
+  },
   "license": "MIT",
   "author": "lisniuse",
   "keywords": [
@@ -18,11 +24,15 @@
     "client"
   ],
   "files": [
+    "index.js",
+    "client.js",
+    "cordis.patch.yml",
     "dist",
     "src",
     "docs",
     "README.md",
-    "README.zh.md"
+    "README.zh.md",
+    "LICENSE"
   ],
   "scripts": {
     "build": "node scripts/build.js",
@@ -31,5 +41,13 @@
   },
   "engines": {
     "node": ">=18"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web"
+    }
   }
 }
