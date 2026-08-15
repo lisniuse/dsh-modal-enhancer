@@ -82,7 +82,13 @@
 }
 
 .dshme-dialog .dshme-btn[aria-pressed='true'] {
-  color: var(--dsw-alias-interactive-primary, #2563eb);
+  background: var(--dsw-alias-interactive-bg-active, rgba(128, 128, 128, 0.16));
+  color: var(--dsw-alias-label-primary, #f3f4f6);
+  box-shadow: inset 0 0 0 1px var(--dsw-alias-border-inverted2, rgba(255, 255, 255, 0.08));
+}
+
+.dshme-dialog .dshme-btn[aria-pressed='true']:hover {
+  background: var(--dsw-alias-interactive-bg-hover-accent, rgba(128, 128, 128, 0.24));
 }
 
 .dshme-dialog .dshme-pin-icon {
@@ -104,7 +110,7 @@
 
 .dshme-dialog .dshme-btn[aria-pressed='true'] .dshme-pin-fill {
   fill: currentColor;
-  opacity: 0.2;
+  opacity: 0.16;
 }
 
 /* Resize handles (N / S / E / W / four corners). */

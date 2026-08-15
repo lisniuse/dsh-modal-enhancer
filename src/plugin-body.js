@@ -84,10 +84,11 @@ return {
 .dshme-dialog .dshme-titlebar .dshme-actions{display:flex;align-items:center;gap:4px;flex:0 0 auto;margin-left:0}
 .dshme-dialog .dshme-btn{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;padding:0;border:none;border-radius:6px;background:transparent;color:var(--dsw-alias-label-secondary,#878787);cursor:pointer;font-size:12px;line-height:1;transition:background .12s ease,color .12s ease}
 .dshme-dialog .dshme-btn:hover{background:var(--dsw-alias-interactive-bg-hover,rgba(128,128,128,.18));color:var(--dsw-alias-label-primary,#1f2329)}
-.dshme-dialog .dshme-btn[aria-pressed='true']{color:var(--dsw-alias-interactive-primary,#2563eb)}
+.dshme-dialog .dshme-btn[aria-pressed='true']{background:var(--dsw-alias-interactive-bg-active,rgba(128,128,128,.16));color:var(--dsw-alias-label-primary,#f3f4f6);box-shadow:inset 0 0 0 1px var(--dsw-alias-border-inverted2,rgba(255,255,255,.08))}
+.dshme-dialog .dshme-btn[aria-pressed='true']:hover{background:var(--dsw-alias-interactive-bg-hover-accent,rgba(128,128,128,.24))}
 .dshme-dialog .dshme-pin-icon{display:block;width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .dshme-dialog .dshme-pin-fill{fill:transparent;stroke:none;transition:fill .12s ease}
-.dshme-dialog .dshme-btn[aria-pressed='true'] .dshme-pin-fill{fill:currentColor;opacity:.2}
+.dshme-dialog .dshme-btn[aria-pressed='true'] .dshme-pin-fill{fill:currentColor;opacity:.16}
 .dshme-dialog .dshme-handle{position:absolute;z-index:5;touch-action:none}
 .dshme-handle.dshme-n{top:-6px;left:16px;right:16px;height:12px;cursor:ns-resize}
 .dshme-handle.dshme-s{bottom:-6px;left:16px;right:16px;height:12px;cursor:ns-resize}
